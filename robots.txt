@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /application/
+Disallow: /system/
+Disallow: /vendor/
+Disallow: /assets/css/
+Disallow: /assets/js/
+Disallow: /product-images/
+
+Sitemap: https://www.yourwebsite.com/sitemap.xml
