@@ -101,14 +101,50 @@ class Welcomemodel extends CI_Model {
     function getschools() {
         return $this->db->query("SELECT * FROM schools WHERE deleted='f' ORDER BY name ASC")->result();
     }
-    function getschoolsfordropdown() {
-        $query = $this->db->query("SELECT id, name FROM schools WHERE deleted='f' ORDER BY name ASC");
-        $schools = array();
-        foreach ($query->result() as $row) {
-            $schools[$row->id] = $row->name;
-        }
-        return $schools;
+    // Make sure these model methods exist in your model
+function getschoolsfordropdown() {
+    $this->db->select('id, name');
+    $this->db->where('deleted', 'f');
+    $this->db->order_by('name', 'ASC');
+    $query = $this->db->get('schools');
+    
+    $schools = array();
+    foreach ($query->result() as $row) {
+        $schools[$row->id] = $row->name;
     }
+    return $schools;
+}
+
+function getdepartmentsfordropdown($school_id = null) {
+    $this->db->select('id, name');
+    $this->db->where('deleted', 'f');
+    
+    if ($school_id) {
+        $this->db->where('sch_id', $school_id);
+    }
+    
+    $this->db->order_by('name', 'ASC');
+    $query = $this->db->get('departments');
+    
+    $departments = array();
+    foreach ($query->result() as $row) {
+        $departments[$row->id] = $row->name;
+    }
+    return $departments;
+}
+
+function getsemesters() {
+    return array(
+        '1' => 'Semester 1',
+        '2' => 'Semester 2',
+        '3' => 'Semester 3',
+        '4' => 'Semester 4',
+        '5' => 'Semester 5',
+        '6' => 'Semester 6',
+        '7' => 'Semester 7',
+        '8' => 'Semester 8'
+    );
+}
     // ========== DEPARTMENTS FUNCTIONS ==========
     
     function getdepartmentsview() {
@@ -229,34 +265,18 @@ class Welcomemodel extends CI_Model {
             );
         }
     }
-    function getdepartmentsfordropdown($school_id = null) {
-        $this->db->select('id, name');
-        $this->db->where('deleted', 'f');
-        
-        if ($school_id) {
-            $this->db->where('sch_id', $school_id);
-        }
-        
-        $this->db->order_by('name', 'ASC');
-        $query = $this->db->get('departments');
-        
-        $departments = array();
-        foreach ($query->result() as $row) {
-            $departments[$row->id] = $row->name;
-        }
-        return $departments;
-    }
+  
     
-    function getdepartmentsbyschool($school_id) {
-        $query = $this->db->query("
-            SELECT id, name 
-            FROM departments 
-            WHERE sch_id = ? AND deleted = 'f' 
-            ORDER BY name ASC
-        ", array($school_id));
+    // function getdepartmentsbyschool($school_id) {
+    //     $query = $this->db->query("
+    //         SELECT id, name 
+    //         FROM departments 
+    //         WHERE sch_id = ? AND deleted = 'f' 
+    //         ORDER BY name ASC
+    //     ", array($school_id));
         
-        return $query->result();
-    }
+    //     return $query->result();
+    // }
     
     // ========== COURSES FUNCTIONS ==========
     
@@ -408,18 +428,7 @@ class Welcomemodel extends CI_Model {
         return $query->num_rows() > 0;
     }
     
-    function getsemesters() {
-        return array(
-            '1' => 'Semester 1',
-            '2' => 'Semester 2',
-            '3' => 'Semester 3',
-            '4' => 'Semester 4',
-            '5' => 'Semester 5',
-            '6' => 'Semester 6',
-            '7' => 'Semester 7',
-            '8' => 'Semester 8'
-        );
-    }
+  
 
     function getcoursesfordropdown($school_id = null, $dept_id = null) {
         $this->db->select('c.id, c.code, c.title, s.name as school_name, d.name as dept_name');
@@ -641,243 +650,297 @@ class Welcomemodel extends CI_Model {
     }
 
       // ========== QUESTIONS FUNCTIONS ==========
-    
-      function getquestionsview($school_id = null, $dept_id = null, $course_id = null, $topic_id = null) {
-        $this->db->select('q.*, c.code as course_code, c.title as course_title, 
-                          t.name as topic_name, s.name as school_name, d.name as dept_name');
-        $this->db->from('questions q');
-        $this->db->join('courses c', 'q.crse_id = c.id', 'left');
-        $this->db->join('topics t', 'q.topic_id = t.id', 'left');
-        $this->db->join('schools s', 'c.sch_id = s.id', 'left');
-        $this->db->join('departments d', 'c.dept_id = d.id', 'left');
-        $this->db->where('q.deleted', 'f');
-        
-        // Apply filters if provided
-        if ($school_id) {
-            $this->db->where('c.sch_id', $school_id);
-        }
-        
-        if ($dept_id) {
-            $this->db->where('c.dept_id', $dept_id);
-        }
-        
-        if ($course_id) {
-            $this->db->where('q.crse_id', $course_id);
-        }
-        
-        if ($topic_id) {
-            $this->db->where('q.topic_id', $topic_id);
-        }
-        
-        $this->db->order_by('s.name, d.name, c.code, t.name, q.id', 'ASC');
-        $query = $this->db->get();
-        
-        $head = "<th>N/A</th><th>QUESTION</th><th>TOPIC</th><th>COURSE</th><th>ANSWER</th><th>EDIT</th><th>DELETE</th>";
-        $body = "";
-        $db_content["head"] = "";
-        $db_content["body"] = "";
-        $db_content["questionCount"] = 0;
+ // ========== QUESTIONS VIEW FUNCTIONS ==========
 
-        if($query->num_rows() > 0){
-            $x = 1;
-            foreach ($query->result() as $row) {
-                // Truncate question for table view
-                $truncated_question = strip_tags($row->qst);
-                if (strlen($truncated_question) > 100) {
-                    $truncated_question = substr($truncated_question, 0, 100) . '...';
-                }
-                
-                $answer_label = '';
-                switch($row->ans) {
-                    case 'a': $answer_label = '<span class="badge bg-success">A</span>'; break;
-                    case 'b': $answer_label = '<span class="badge bg-success">B</span>'; break;
-                    case 'c': $answer_label = '<span class="badge bg-success">C</span>'; break;
-                    case 'd': $answer_label = '<span class="badge bg-success">D</span>'; break;
-                    default: $answer_label = '<span class="badge bg-danger">N/A</span>';
-                }
-                
-                $edit_btn = "<button type='button' class='btn btn-info btn-sm edit-question' 
-                            data-id='$row->id'>
-                            <i class='fas fa-pencil-alt'></i> Edit
-                            </button>";
-                
-                $delete_btn = "<button type='button' class='btn btn-danger btn-sm delete-question' 
-                              data-id='$row->id' 
-                              data-preview='$truncated_question'>
-                              <i class='fas fa-trash'></i> Delete
-                              </button>";
-                
-                $preview_btn = "<button type='button' class='btn btn-primary btn-sm preview-question' 
-                               data-id='$row->id'>
-                               <i class='fas fa-eye'></i> Preview
-                               </button>";
-                
-                $body .= "<tr>
-                            <td>$x</td>
-                            <td>
-                                <div><strong>$truncated_question</strong></div>
-                                <small class='text-muted'>Course: $row->course_code - $row->course_title</small>
-                            </td>
-                            <td>$row->topic_name</td>
-                            <td>$row->course_code</td>
-                            <td>$answer_label</td>
-                            <td>$edit_btn</td>
-                            <td>$delete_btn</td>
-                          </tr>";
-                $x++;
-            }
-            $db_content["head"] = $head;
-            $db_content["body"] = $body;
-            $db_content["questionCount"] = $x - 1;
-        }
-        
-        return $db_content;
+function getquestionsview($school_id = null, $dept_id = null, $course_id = null, $topic_id = null, $year = null, $answer = null) {
+    $this->db->select('q.*, c.code as course_code, c.title as course_title, 
+                      t.name as topic_name, s.name as school_name, d.name as dept_name');
+    $this->db->from('questions q');
+    $this->db->join('courses c', 'q.crse_id = c.id', 'left');
+    $this->db->join('topics t', 'q.topic_id = t.id', 'left');
+    $this->db->join('schools s', 'c.sch_id = s.id', 'left');
+    $this->db->join('departments d', 'c.dept_id = d.id', 'left');
+    $this->db->where('q.deleted', 'f');
+    
+    // Apply filters if provided
+    if ($school_id) {
+        $this->db->where('c.sch_id', $school_id);
     }
     
-    function getquestions() {
-        return $this->db->query("
-            SELECT q.*, c.code as course_code, c.title as course_title, 
-                   t.name as topic_name, s.name as school_name, d.name as dept_name 
-            FROM questions q 
-            LEFT JOIN courses c ON q.crse_id = c.id 
-            LEFT JOIN topics t ON q.topic_id = t.id 
-            LEFT JOIN schools s ON c.sch_id = s.id 
-            LEFT JOIN departments d ON c.dept_id = d.id 
-            WHERE q.deleted='f' 
-            ORDER BY q.id DESC
-        ")->result();
+    if ($dept_id) {
+        $this->db->where('c.dept_id', $dept_id);
     }
     
-    function addquestion($question_data) {
-        // Sanitize HTML content
-        $question_data['qst'] = $this->sanitize_html($question_data['qst']);
-        $question_data['option_a'] = $this->sanitize_html($question_data['option_a']);
-        $question_data['option_b'] = $this->sanitize_html($question_data['option_b']);
-        $question_data['option_c'] = $this->sanitize_html($question_data['option_c']);
-        $question_data['option_d'] = $this->sanitize_html($question_data['option_d']);
-        $question_data['instruction'] = $this->sanitize_html($question_data['instruction']);
-        $question_data['explanation'] = $this->sanitize_html($question_data['explanation']);
-        
-        if ($this->db->insert("questions", $question_data)) {
-            $question_id = $this->db->insert_id();
-            return array(
-                'status' => 'success',
-                'message' => 'Question added successfully!',
-                'question_id' => $question_id
-            );
-        } else {
-            return array(
-                'status' => 'error',
-                'message' => 'Error adding question!'
-            );
-        }
+    if ($course_id) {
+        $this->db->where('q.crse_id', $course_id);
     }
     
-    function getquestionbyid($id) {
-        $this->db->select('q.*, c.code as course_code, c.title as course_title, 
-                          t.name as topic_name, c.sch_id, c.dept_id');
-        $this->db->from('questions q');
-        $this->db->join('courses c', 'q.crse_id = c.id', 'left');
-        $this->db->join('topics t', 'q.topic_id = t.id', 'left');
-        $this->db->where('q.id', $id);
-        $this->db->where('q.deleted', 'f');
-        
-        return $this->db->get()->row();
+    if ($topic_id) {
+        $this->db->where('q.topic_id', $topic_id);
     }
     
-    function updatequestion($id, $question_data) {
-        // Sanitize HTML content
-        $question_data['qst'] = $this->sanitize_html($question_data['qst']);
-        $question_data['option_a'] = $this->sanitize_html($question_data['option_a']);
-        $question_data['option_b'] = $this->sanitize_html($question_data['option_b']);
-        $question_data['option_c'] = $this->sanitize_html($question_data['option_c']);
-        $question_data['option_d'] = $this->sanitize_html($question_data['option_d']);
-        $question_data['instruction'] = $this->sanitize_html($question_data['instruction']);
-        $question_data['explanation'] = $this->sanitize_html($question_data['explanation']);
-        
-        $this->db->where('id', $id);
-        
-        if ($this->db->update('questions', $question_data)) {
-            return array(
-                'status' => 'success',
-                'message' => 'Question updated successfully!'
-            );
-        } else {
-            return array(
-                'status' => 'error',
-                'message' => 'Error updating question!'
-            );
-        }
+    if ($year === 'null') {
+        $this->db->where('q.year IS NULL', null, false);
+    } elseif ($year && $year !== 'null') {
+        $this->db->where('q.year', $year);
     }
     
-    function deletequestion($id) {
-        $data = array('deleted' => 't');
-        $this->db->where('id', $id);
-        
-        if ($this->db->update('questions', $data)) {
-            return array(
-                'status' => 'success',
-                'message' => 'Question deleted successfully!'
-            );
-        } else {
-            return array(
-                'status' => 'error',
-                'message' => 'Error deleting question!'
-            );
-        }
+    if ($answer) {
+        $this->db->where('q.ans', strtolower($answer));
     }
     
-    function gettopicsbycourse($course_id) {
-        $this->db->select('id, name');
-        $this->db->where('crse_id', $course_id);
-        $this->db->where('deleted', 'f');
-        $this->db->order_by('name', 'ASC');
-        $query = $this->db->get('topics');
-        
-        $topics = array();
+    // FIXED: Changed from incorrect syntax to proper ORDER BY
+    $this->db->order_by('s.name ASC, d.name ASC, c.code ASC, t.name ASC, q.year DESC, q.id ASC');
+    $query = $this->db->get();
+    
+    $head = "<th>N/A</th><th>QUESTION</th><th>COURSE</th><th>TOPIC</th><th>SCHOOL</th><th>DEPARTMENT</th><th>YEAR</th><th>ANSWER</th><th>EDIT</th><th>DELETE</th>";
+    $body = "";
+    $db_content["head"] = "";
+    $db_content["body"] = "";
+    $db_content["questionCount"] = 0;
+
+    if($query->num_rows() > 0){
+        $x = 1;
         foreach ($query->result() as $row) {
-            $topics[$row->id] = $row->name;
+            // Initialize variables to prevent undefined errors
+            $truncated_question = "";
+            $answer_label = "";
+            $edit_btn = "";
+            $delete_btn = "";
+            
+            // Truncate question text for display
+            $plain_text = strip_tags($row->qst);
+            $truncated_question = mb_substr($plain_text, 0, 80, 'UTF-8');
+            if (strlen($plain_text) > 80) {
+                $truncated_question .= '...';
+            }
+            
+            // Answer badge
+            switch(strtoupper($row->ans)) {
+                case 'A':
+                    $answer_label = '<span class="badge bg-success">A</span>';
+                    break;
+                case 'B':
+                    $answer_label = '<span class="badge bg-primary">B</span>';
+                    break;
+                case 'C':
+                    $answer_label = '<span class="badge bg-warning">C</span>';
+                    break;
+                case 'D':
+                    $answer_label = '<span class="badge bg-danger">D</span>';
+                    break;
+                default:
+                    $answer_label = '<span class="badge bg-secondary">N/A</span>';
+            }
+            
+            // Year display
+            $year_display = $row->year ? $row->year : '<span class="text-muted">N/A</span>';
+            
+            // Action buttons
+            $edit_btn = "<button type='button' class='btn btn-warning btn-sm edit-question' 
+                        data-id='$row->id'>
+                        <i class='fas fa-edit'></i>
+                        </button>";
+            
+            $delete_btn = "<button type='button' class='btn btn-danger btn-sm delete-question' 
+                          data-id='$row->id' 
+                          data-question='$truncated_question'>
+                          <i class='fas fa-trash'></i>
+                          </button>";
+            
+            $body .= "<tr>
+                        <td>$x</td>
+                        <td><strong>$truncated_question</strong></td>
+                        <td><strong>$row->course_code</strong><br><small>$row->course_title</small></td>
+                        <td>" . ($row->topic_name ? $row->topic_name : '<span class="text-muted">N/A</span>') . "</td>
+                        <td>$row->school_name</td>
+                        <td>$row->dept_name</td>
+                        <td>$year_display</td>
+                        <td>$answer_label</td>
+                        <td>$edit_btn</td>
+                        <td>$delete_btn</td>
+                      </tr>";
+            $x++;
         }
-        return $topics;
+        $db_content["head"] = $head;
+        $db_content["body"] = $body;
+        $db_content["questionCount"] = $x - 1;
+    } else {
+        // Initialize variables even when no results to prevent errors
+        $db_content["head"] = $head;
+        $db_content["body"] = "<tr><td colspan='10' class='text-center'>No questions found</td></tr>";
+        $db_content["questionCount"] = 0;
     }
     
-    function gettopicslistbycourse($course_id) {
-        $this->db->select('id, name');
-        $this->db->where('crse_id', $course_id);
-        $this->db->where('deleted', 'f');
-        $this->db->order_by('name', 'ASC');
-        return $this->db->get('topics')->result();
-    }
+    return $db_content;
+}
     
-    function sanitize_html($html) {
-        // Basic HTML sanitization - allow safe tags for WYSIWYG content
-        $allowed_tags = '<h1><h2><h3><h4><h5><h6><p><br><div><span><strong><b><em><i><u>';
-        $allowed_tags .= '<ul><ol><li><table><tr><td><th><thead><tbody><tfoot>';
-        $allowed_tags .= '<a><img><iframe><video><audio><source>';
-        $allowed_tags .= '<sup><sub><code><pre><blockquote><hr>';
-        $allowed_tags .= '<math><mi><mo><mn><msup><msub><mfrac><msqrt><mroot><mrow><mtable>';
-        $allowed_tags .= '<mtr><mtd><munder><mover><mtext><menclose><merror><mpadded><mphantom>';
-        $allowed_tags .= '<mspace><ms><maction><maligngroup><malignmark><mlabeledtr><mlongdiv>';
-        
-        // Clean HTML
-        $html = strip_tags($html, $allowed_tags);
-        
-        // Remove dangerous attributes but keep safe ones
-        $html = preg_replace('/ on\w+="[^"]*"/i', '', $html);
-        $html = preg_replace('/ javascript:/i', '', $html);
-        $html = preg_replace('/ data:/i', '', $html);
-        
-        return trim($html);
-    }
+function getquestions() {
+    return $this->db->query("
+        SELECT q.*, c.code as course_code, c.title as course_title, 
+               t.name as topic_name, s.name as school_name, d.name as dept_name 
+        FROM questions q 
+        LEFT JOIN courses c ON q.crse_id = c.id 
+        LEFT JOIN topics t ON q.topic_id = t.id 
+        LEFT JOIN schools s ON c.sch_id = s.id 
+        LEFT JOIN departments d ON c.dept_id = d.id 
+        WHERE q.deleted='f' 
+        ORDER BY q.id DESC
+    ")->result();
+}
+
+function addquestion($question_data) {
+    // Sanitize HTML content
+    $question_data['qst'] = $this->sanitize_html($question_data['qst']);
+    $question_data['option_a'] = $this->sanitize_html($question_data['option_a']);
+    $question_data['option_b'] = $this->sanitize_html($question_data['option_b']);
+    $question_data['option_c'] = $this->sanitize_html($question_data['option_c']);
+    $question_data['option_d'] = $this->sanitize_html($question_data['option_d']);
+    $question_data['instruction'] = isset($question_data['instruction']) ? $this->sanitize_html($question_data['instruction']) : '';
+    $question_data['explanation'] = isset($question_data['explanation']) ? $this->sanitize_html($question_data['explanation']) : '';
     
-    function getansweroptions() {
+    // Add date added
+    $question_data['date_added'] = date('Y-m-d H:i:s');
+    
+    if ($this->db->insert("questions", $question_data)) {
+        $question_id = $this->db->insert_id();
         return array(
-            'a' => 'Option A',
-            'b' => 'Option B',
-            'c' => 'Option C',
-            'd' => 'Option D'
+            'status' => 'success',
+            'message' => 'Question added successfully!',
+            'question_id' => $question_id
+        );
+    } else {
+        return array(
+            'status' => 'error',
+            'message' => 'Error adding question!'
         );
     }
+}
+
+function getquestionbyid($id) {
+    $this->db->select('q.*, c.code as course_code, c.title as course_title, 
+                      t.name as topic_name, c.sch_id, c.dept_id,
+                      s.name as school_name, d.name as dept_name');
+    $this->db->from('questions q');
+    $this->db->join('courses c', 'q.crse_id = c.id', 'left');
+    $this->db->join('topics t', 'q.topic_id = t.id', 'left');
+    $this->db->join('schools s', 'c.sch_id = s.id', 'left');
+    $this->db->join('departments d', 'c.dept_id = d.id', 'left');
+    $this->db->where('q.id', $id);
+    $this->db->where('q.deleted', 'f');
+    
+    return $this->db->get()->row();
+}
+
+function updatequestion($id, $question_data) {
+    // Sanitize HTML content
+    $question_data['qst'] = $this->sanitize_html($question_data['qst']);
+    $question_data['option_a'] = $this->sanitize_html($question_data['option_a']);
+    $question_data['option_b'] = $this->sanitize_html($question_data['option_b']);
+    $question_data['option_c'] = $this->sanitize_html($question_data['option_c']);
+    $question_data['option_d'] = $this->sanitize_html($question_data['option_d']);
+    $question_data['instruction'] = isset($question_data['instruction']) ? $this->sanitize_html($question_data['instruction']) : '';
+    $question_data['explanation'] = isset($question_data['explanation']) ? $this->sanitize_html($question_data['explanation']) : '';
+    
+    $this->db->where('id', $id);
+    
+    if ($this->db->update('questions', $question_data)) {
+        return array(
+            'status' => 'success',
+            'message' => 'Question updated successfully!'
+        );
+    } else {
+        return array(
+            'status' => 'error',
+            'message' => 'Error updating question!'
+        );
+    }
+}
+
+function deletequestion($id) {
+    $data = array('deleted' => 't');
+    $this->db->where('id', $id);
+    
+    if ($this->db->update('questions', $data)) {
+        return array(
+            'status' => 'success',
+            'message' => 'Question deleted successfully!'
+        );
+    } else {
+        return array(
+            'status' => 'error',
+            'message' => 'Error deleting question!'
+        );
+    }
+}
+
+function gettopicsbycourse($course_id) {
+    $this->db->select('id, name');
+    $this->db->where('crse_id', $course_id);
+    $this->db->where('deleted', 'f');
+    $this->db->order_by('name', 'ASC');
+    $query = $this->db->get('topics');
+    
+    $topics = array();
+    foreach ($query->result() as $row) {
+        $topics[$row->id] = $row->name;
+    }
+    return $topics;
+}
+
+function gettopicslistbycourse($course_id) {
+    $this->db->select('id, name');
+    $this->db->where('crse_id', $course_id);
+    $this->db->where('deleted', 'f');
+    $this->db->order_by('name', 'ASC');
+    return $this->db->get('topics')->result();
+}
+
+function getdepartmentsbyschool($school_id) {
+    $this->db->select('id, name');
+    $this->db->where('sch_id', $school_id);
+    $this->db->where('deleted', 'f');
+    $this->db->order_by('name', 'ASC');
+    $query = $this->db->get('departments');
+    
+    if ($query->num_rows() > 0) {
+        return $query->result();
+    } else {
+        return array(); // Return empty array if no departments
+    }
+}
+
+function sanitize_html($html) {
+    if (empty($html)) return '';
+    
+    // Basic HTML sanitization - allow safe tags for WYSIWYG content
+    $allowed_tags = '<h1><h2><h3><h4><h5><h6><p><br><div><span><strong><b><em><i><u>';
+    $allowed_tags .= '<ul><ol><li><table><tr><td><th><thead><tbody><tfoot>';
+    $allowed_tags .= '<a><img><iframe><video><audio><source>';
+    $allowed_tags .= '<sup><sub><code><pre><blockquote><hr>';
+    $allowed_tags .= '<math><mi><mo><mn><msup><msub><mfrac><msqrt><mroot><mrow><mtable>';
+    $allowed_tags .= '<mtr><mtd><munder><mover><mtext><menclose><merror><mpadded><mphantom>';
+    $allowed_tags .= '<mspace><ms><maction><maligngroup><malignmark><mlabeledtr><mlongdiv>';
+    
+    // Clean HTML
+    $html = strip_tags($html, $allowed_tags);
+    
+    // Remove dangerous attributes but keep safe ones
+    $html = preg_replace('/ on\w+="[^"]*"/i', '', $html);
+    $html = preg_replace('/ javascript:/i', '', $html);
+    $html = preg_replace('/ data:/i', '', $html);
+    
+    return trim($html);
+}
+
+function getansweroptions() {
+    return array(
+        'a' => 'Option A',
+        'b' => 'Option B',
+        'c' => 'Option C',
+        'd' => 'Option D'
+    );
+}
 
     // ========== BATCH UPLOAD FUNCTIONS ==========
     
@@ -891,15 +954,22 @@ class Welcomemodel extends CI_Model {
         
         foreach ($questions_data as $index => $question) {
             try {
-                // Check if question already exists for this course/topic
-                $existing = $this->db->get_where('questions', array(
+                // Check if question already exists for this course/topic/year
+                $existing_conditions = array(
                     'crse_id' => $question['course_id'],
                     'topic_id' => $question['topic_id'],
                     'qst' => $question['question']
-                ))->row();
+                );
+                
+                // Add year to conditions if provided
+                if (!empty($question['year'])) {
+                    $existing_conditions['year'] = $question['year'];
+                }
+                
+                $existing = $this->db->get_where('questions', $existing_conditions)->row();
                 
                 if ($existing) {
-                    throw new Exception("Question already exists in this topic");
+                    throw new Exception("Question already exists" . (!empty($question['year']) ? " for year " . $question['year'] : ""));
                 }
                 
                 // Sanitize and prepare data
@@ -911,11 +981,19 @@ class Welcomemodel extends CI_Model {
                     'option_b' => $this->sanitize_html($question['option_b']),
                     'option_c' => $this->sanitize_html($question['option_c']),
                     'option_d' => $this->sanitize_html($question['option_d']),
-                    'ans' => strtolower(trim($question['correct_answer'])),
+                    'ans' => strtoupper(trim($question['correct_answer'])), // Changed to uppercase for consistency
                     'instruction' => isset($question['instruction']) ? $this->sanitize_html($question['instruction']) : '',
                     'explanation' => isset($question['explanation']) ? $this->sanitize_html($question['explanation']) : '',
                     'date_added' => date('Y-m-d H:i:s')
                 );
+                
+                // Add year if provided and valid
+                if (!empty($question['year']) && is_numeric($question['year'])) {
+                    $year = intval($question['year']);
+                    if ($year >= 1900 && $year <= 2100) {
+                        $sanitized_data['year'] = $year;
+                    }
+                }
                 
                 // Insert question
                 $this->db->insert("questions", $sanitized_data);
@@ -959,51 +1037,87 @@ class Welcomemodel extends CI_Model {
             'failed_records' => $failed_records
         );
     }
-    function validatebatchdata($questions_data) {
-        $errors = array();
-        $validated_data = array();
+
+   function validatebatchdata($questions_data) {
+    $errors = array();
+    $validated_data = array();
+    
+    // Get current year for validation range
+    $current_year = date('Y');
+    
+    foreach ($questions_data as $index => $row) {
+        $row_num = $index + 1;
+        $row_errors = array();
         
-        foreach ($questions_data as $index => $row) {
-            $row_num = $index + 1;
-            $row_errors = array();
-            
-            // Check required fields
-            $required_fields = ['question', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer'];
-            foreach ($required_fields as $field) {
-                if (!isset($row[$field]) || trim($row[$field]) === '') {
-                    $row_errors[] = "Missing required field: {$field}";
-                }
-            }
-            
-            // Validate answer
-            if (isset($row['correct_answer']) && trim($row['correct_answer']) !== '') {
-                $answer = strtoupper(trim($row['correct_answer']));
-                if (!in_array($answer, ['A', 'B', 'C', 'D'])) {
-                    $row_errors[] = "Invalid answer. Must be A, B, C, or D. Got: {$answer}";
-                }
-            }
-            
-            // Check for double commas in question text (they would break the format)
-            if (isset($row['question']) && strpos($row['question'], ',,') !== false) {
-                $row_errors[] = "Question text contains double commas (,,) which are reserved as field separators";
-            }
-            
-            if (empty($row_errors)) {
-                $validated_data[] = $row;
-            } else {
-                $errors[$row_num] = $row_errors;
+        // Check required fields
+        $required_fields = ['question', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer'];
+        foreach ($required_fields as $field) {
+            if (!isset($row[$field]) || trim($row[$field]) === '') {
+                $row_errors[] = "Missing required field: {$field}";
             }
         }
         
-        return array(
-            'validated_data' => $validated_data,
-            'errors' => $errors,
-            'total_rows' => count($questions_data),
-            'valid_rows' => count($validated_data),
-            'invalid_rows' => count($errors)
-        );
+        // Validate answer
+        if (isset($row['correct_answer']) && trim($row['correct_answer']) !== '') {
+            $answer = strtoupper(trim($row['correct_answer']));
+            if (!in_array($answer, ['A', 'B', 'C', 'D'])) {
+                $row_errors[] = "Invalid answer. Must be A, B, C, or D. Got: {$answer}";
+            }
+        }
+        
+        // Validate year if provided
+        if (isset($row['year']) && trim($row['year']) !== '') {
+            $year = trim($row['year']);
+            
+            // Check if it's a valid year
+            if (!preg_match('/^\d{4}$/', $year)) {
+                $row_errors[] = "Invalid year format. Must be 4 digits (e.g., 2024)";
+            } else {
+                $year_int = intval($year);
+                // Check if year is within reasonable range (e.g., 1900-2100)
+                if ($year_int < 1900 || $year_int > 2100) {
+                    $row_errors[] = "Year must be between 1900 and 2100. Got: {$year}";
+                }
+            }
+        }
+        
+        // Check for double commas in question text
+        if (isset($row['question']) && strpos($row['question'], ',,') !== false) {
+            $row_errors[] = "Question text contains double commas (,,) which are reserved as field separators";
+        }
+        
+        if (empty($row_errors)) {
+            $validated_data[] = $row;
+        } else {
+            $errors[$row_num] = $row_errors;
+        }
     }
     
+    return array(
+        'validated_data' => $validated_data,
+        'errors' => $errors,
+        'total_rows' => count($questions_data),
+        'valid_rows' => count($validated_data),
+        'invalid_rows' => count($errors)
+    );
+}
+// Add this function to your model
+function getyearsfordropdown($start_year = null, $end_year = null) {
+    // Set default range if not provided
+    if ($start_year === null) {
+        $start_year = 2010;
+    }
+    if ($end_year === null) {
+        $end_year = date('Y') + 1; // Include next year
+    }
+    
+    $years = array();
+    for ($year = $end_year; $year >= $start_year; $year--) {
+        $years[$year] = $year;
+    }
+    
+    return $years;
+}
     function processuploadedfile($file_path) {
         $extension = pathinfo($file_path, PATHINFO_EXTENSION);
         $questions_data = array();

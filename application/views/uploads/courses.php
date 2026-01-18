@@ -379,44 +379,51 @@
                 $('#refreshTable').click(function() {
                     refreshTable();
                 });
-                
-                // Function to load departments based on selected school
-                function loadDepartmentsBySchool(schoolId, targetSelect, selectedDeptId = '') {
-                    if (!schoolId) {
-                        targetSelect.empty().append('<option value="">-- Select Department --</option>');
-                        return;
-                    }
+               // Function to load departments based on selected school
+function loadDepartmentsBySchool(schoolId, targetSelect, selectedDeptId = '') {
+    if (!schoolId) {
+        targetSelect.empty().append('<option value="">-- Select Department --</option>');
+        return;
+    }
+    
+    $.ajax({
+        url: '<?php echo base_url("welcome/getdepartmentsbyschool_ajax"); ?>/' + schoolId,
+        method: 'GET',
+        dataType: 'json',
+        beforeSend: function() {
+            targetSelect.prop('disabled', true).empty().append('<option value="">Loading departments...</option>');
+        },
+        success: function(response) {
+            console.log('Departments response:', response); // Debug log
+            targetSelect.empty();
+            
+            if (response.status === 'success') {
+                if (response.departments && response.departments.length > 0) {
+                    targetSelect.append('<option value="">-- Select Department --</option>');
                     
-                    $.ajax({
-                        url: '<?php echo base_url("welcome/getdepartmentsbyschool_ajax"); ?>/' + schoolId,
-                        method: 'GET',
-                        dataType: 'json',
-                        beforeSend: function() {
-                            targetSelect.prop('disabled', true);
-                        },
-                        success: function(response) {
-                            if (response.status === 'success') {
-                                targetSelect.empty().append('<option value="">-- Select Department --</option>');
-                                
-                                $.each(response.departments, function(index, dept) {
-                                    var selected = (dept.id == selectedDeptId) ? 'selected' : '';
-                                    targetSelect.append('<option value="' + dept.id + '" ' + selected + '>' + dept.name + '</option>');
-                                });
-                                
-                                if (response.departments.length === 0) {
-                                    targetSelect.append('<option value="" disabled>No departments found for this school</option>');
-                                }
-                            }
-                        },
-                        error: function() {
-                            showAlert('Error loading departments!', 'error');
-                        },
-                        complete: function() {
-                            targetSelect.prop('disabled', false);
-                        }
+                    $.each(response.departments, function(index, dept) {
+                        var selected = (dept.id == selectedDeptId) ? 'selected' : '';
+                        targetSelect.append('<option value="' + dept.id + '" ' + selected + '>' + dept.name + '</option>');
                     });
+                } else {
+                    targetSelect.append('<option value="">No departments found for this school</option>');
                 }
-                
+            } else {
+                targetSelect.append('<option value="">Error loading departments</option>');
+                console.error('Error response:', response);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('AJAX Error:', status, error);
+            console.error('Response:', xhr.responseText);
+            targetSelect.empty().append('<option value="">Error loading departments</option>');
+            showAlert('Error loading departments. Please try again.', 'error');
+        },
+        complete: function() {
+            targetSelect.prop('disabled', false);
+        }
+    });
+} 
                 // School change handler for Add modal
                 $('#addSchoolSelect').change(function() {
                     var schoolId = $(this).val();

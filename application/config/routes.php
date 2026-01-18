@@ -102,3 +102,16 @@ $route['batch/topics/(:num)'] = 'welcome/gettopicsforcourse/$1';
 $route['home/productslist1'] = 'home/productslist1';
 $route['home/productslist1/(:num)'] = 'home/productslist1/$1';
 $route['sitemap\.xml'] = 'sitemap';
+
+
+// API Routes
+$route['api/questions/credentials'] = 'welcome/api_questions_credentials';
+$route['api/questions/data'] = 'welcome/api_questions_data';
+$route['api/questions/filters'] = 'welcome/api_questions_filters';
+$route['api/questions/(:num)'] = 'welcome/api_question_by_id/$1';
+
+// If you want versioned API routes
+$route['api/v1/questions/credentials'] = 'welcome/api_questions_credentials';
+$route['api/v1/questions/data'] = 'welcome/api_questions_data';
+$route['api/v1/questions/filters'] = 'welcome/api_questions_filters';
+$route['api/v1/questions/(:num)'] = 'welcome/api_question_by_id/$1';

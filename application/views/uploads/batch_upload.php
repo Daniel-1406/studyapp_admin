@@ -86,7 +86,7 @@
                         <div class="row mb-2">
                             <div class="col-sm-6">
                                 <h1>Batch Questions Upload</h1>
-                                <p class="text-muted">Upload multiple questions at once using CSV or Excel files</p>
+                                <p class="text-muted">Upload multiple questions at once using TXT, DOC, or DOCX files</p>
                             </div>
                             <div class="col-sm-6">
                                 <ol class="breadcrumb float-sm-right">
@@ -167,7 +167,8 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
+
+                                                <!-- Year selection row -->
                                                 <div class="row">
                                                     <div class="col-md-6">
                                                         <div class="form-group">
@@ -180,13 +181,34 @@
                                                     </div>
                                                     <div class="col-md-6">
                                                         <div class="form-group">
+                                                            <label for="uploadYear">Year (Optional)</label>
+                                                            <select class="form-control" id="uploadYear" name="year">
+                                                                <option value="">-- Select Year (Optional) --</option>
+                                                                <?php if(isset($years) && !empty($years)): ?>
+                                                                    <?php foreach($years as $year): ?>
+                                                                        <option value="<?php echo $year; ?>"><?php echo htmlspecialchars($year); ?></option>
+                                                                    <?php endforeach; ?>
+                                                                <?php endif; ?>
+                                                                <option value="custom">Enter Custom Year</option>
+                                                            </select>
+                                                            <input type="number" class="form-control mt-2" id="customYear" name="custom_year" 
+                                                                   placeholder="Enter year (e.g., 2024)" style="display: none;" 
+                                                                   min="1900" max="2100">
+                                                            <small class="form-text text-muted">Select or enter the year for these questions (optional)</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
                                                             <label>Template Files</label>
                                                             <div>
-                                                                <a href="<?php echo base_url('welcome/downloadtemplate/csv'); ?>" class="btn btn-outline-success btn-sm">
-                                                                    <i class="fas fa-file-csv"></i> Download CSV Template
+                                                                <a href="<?php echo base_url('welcome/downloadtexttemplate'); ?>" class="btn btn-outline-success btn-sm">
+                                                                    <i class="fas fa-file-alt"></i> Download Text Template
                                                                 </a>
-                                                                <a href="<?php echo base_url('welcome/downloadtemplate/excel'); ?>" class="btn btn-outline-primary btn-sm">
-                                                                    <i class="fas fa-file-excel"></i> Download Excel Template
+                                                                <a href="<?php echo base_url('welcome/downloadwordtemplate'); ?>" class="btn btn-outline-primary btn-sm">
+                                                                    <i class="fas fa-file-word"></i> Download Word Template
                                                                 </a>
                                                             </div>
                                                             <small class="form-text text-muted">Download template files to see the required format</small>
@@ -204,9 +226,8 @@
                                             <!-- Step 2: File Upload -->
                                             <div id="step2-content" style="display: none;">
                                                 <h5><i class="fas fa-cloud-upload-alt"></i> Step 2: Upload Questions File</h5>
-                                                <p class="text-muted">Upload your CSV or Excel file containing questions.</p>
+                                                <p class="text-muted">Upload your TXT, DOC, or DOCX file containing questions.</p>
                                                 
-                                               <!-- In the upload section, update the file input and supported formats -->
                                                 <div class="upload-area" id="uploadArea">
                                                     <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
                                                     <h5>Drag & Drop your file here</h5>
@@ -216,68 +237,59 @@
                                                     <p class="text-muted"><strong>Format:</strong> Each question per line, fields separated by double commas (,,), lines ending with pipe (|)</p>
                                                 </div>
                                                 
-                                               <!-- Update the file input to only accept the specified formats -->
                                                 <input type="file" id="questionsFile" name="questions_file" accept=".txt,.doc,.docx" style="position: absolute; left: -9999px;">
 
-                                                
-<!-- Update the format example section -->
-<div class="row mt-4">
-    <div class="col-md-12">
-        <h6><i class="fas fa-table"></i> Required File Format:</h6>
-        
-        <div class="alert alert-info">
-            <h6><i class="fas fa-info-circle"></i> Format Specification:</h6>
-            <p>Each question must be on a single line with the following format:</p>
-            <code>Question text,,Option A,,Option B,,Option C,,Option D,,Correct Answer,,Instruction,,Explanation|</code>
-            <p class="mt-2"><strong>Note:</strong> Use double commas (,,) as separators and pipe (|) at the end of each line.</p>
-        </div>
-        
-        <div class="table-responsive">
-            <table class="table table-bordered sample-table">
-                <thead>
-                    <tr>
-                        <th>Format Example</th>
-                        <th>Explanation</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><code>What is 2 + 2?,,3,,4,,5,,6,,B,,Choose the correct answer.,,2 + 2 equals 4, which is option B.|</code></td>
-                        <td>Complete question with all fields</td>
-                    </tr>
-                    <tr>
-                        <td><code>Capital of France?,,London,,Berlin,,Paris,,Madrid,,C,,,,Paris is capital.|</code></td>
-                        <td>Question with empty instruction field (notice double commas)</td>
-                    </tr>
-                    <tr>
-                        <td><code>Chemical symbol for water?,,H,,HO,,H2O,,OH,,C,,,,H2O is the chemical formula for water.|</code></td>
-                        <td>Another example with explanation</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="alert alert-warning">
-            <h6><i class="fas fa-exclamation-triangle"></i> Important Notes:</h6>
-            <ol>
-                <li>All fields except Instruction and Explanation are required</li>
-                <li>Correct Answer must be A, B, C, or D (case insensitive)</li>
-                <li>Use exactly <strong>double commas (,,)</strong> to separate fields</li>
-                <li>End each line with a <strong>pipe character (|)</strong></li>
-                <li>Each question must be on its own line</li>
-            </ol>
-        </div>
-        
-        <div class="text-center mt-3">
-            <a href="<?php echo base_url('welcome/downloadtexttemplate'); ?>" class="btn btn-outline-primary">
-                <i class="fas fa-download"></i> Download Text Template
-            </a>
-            <a href="<?php echo base_url('welcome/downloadwordtemplate'); ?>" class="btn btn-outline-info">
-                <i class="fas fa-file-word"></i> Download Word Template
-            </a>
-        </div>
-    </div>
-</div>
+                                                <!-- Format example section -->
+                                                <div class="row mt-4">
+                                                    <div class="col-md-12">
+                                                        <h6><i class="fas fa-table"></i> Required File Format:</h6>
+                                                        
+                                                        <div class="alert alert-info">
+                                                            <h6><i class="fas fa-info-circle"></i> Format Specification:</h6>
+                                                            <p>Each question must be on a single line with the following format:</p>
+                                                            <code>Question text,,Option A,,Option B,,Option C,,Option D,,Correct Answer,,Instruction,,Explanation,,Year|</code>
+                                                            <p class="mt-2"><strong>Note:</strong> Use double commas (,,) as separators and pipe (|) at the end of each line.</p>
+                                                            <p><strong>Year is optional:</strong> If provided, it must be a 4-digit year (e.g., 2024)</p>
+                                                        </div>
+                                                        
+                                                        <div class="table-responsive">
+                                                            <table class="table table-bordered sample-table">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>Format Example</th>
+                                                                        <th>Explanation</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <tr>
+                                                                        <td><code>What is 2 + 2?,,3,,4,,5,,6,,B,,Choose the correct answer.,,2 + 2 equals 4, which is option B.,,2023|</code></td>
+                                                                        <td>Complete question with year 2023</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td><code>Capital of France?,,London,,Berlin,,Paris,,Madrid,,C,,,,Paris is capital.,,2024|</code></td>
+                                                                        <td>Question with year 2024, empty instruction</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td><code>Chemical symbol for water?,,H,,HO,,H2O,,OH,,C,,,,H2O is the chemical formula for water.|</code></td>
+                                                                        <td>Question without year field</td>
+                                                                    </tr>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                        
+                                                        <div class="alert alert-warning">
+                                                            <h6><i class="fas fa-exclamation-triangle"></i> Important Notes:</h6>
+                                                            <ol>
+                                                                <li>All fields except Instruction, Explanation, and Year are required</li>
+                                                                <li>Correct Answer must be A, B, C, or D (case insensitive)</li>
+                                                                <li>Use exactly <strong>double commas (,,)</strong> to separate fields</li>
+                                                                <li>End each line with a <strong>pipe character (|)</strong></li>
+                                                                <li>Each question must be on its own line</li>
+                                                                <li>Year is optional but if provided, must be 4 digits (1900-2100)</li>
+                                                            </ol>
+                                                        </div>
+                                                    </div>
+                                                </div>
 
                                                 <div class="file-info" id="fileInfo">
                                                     <div class="row">
@@ -297,54 +309,6 @@
                                                 <div class="progress" id="uploadProgress">
                                                     <div class="progress-bar progress-bar-striped progress-bar-animated" 
                                                          role="progressbar" style="width: 0%"></div>
-                                                </div>
-                                                
-                                                <div class="row mt-4">
-                                                    <div class="col-md-12">
-                                                        <h6><i class="fas fa-table"></i> Required File Format:</h6>
-                                                        <div class="table-responsive">
-                                                            <table class="table table-bordered sample-table">
-                                                                <thead>
-                                                                    <tr>
-                                                                        <th>Question</th>
-                                                                        <th>Option A</th>
-                                                                        <th>Option B</th>
-                                                                        <th>Option C</th>
-                                                                        <th>Option D</th>
-                                                                        <th>Correct Answer</th>
-                                                                        <th>Instruction (Optional)</th>
-                                                                        <th>Explanation (Optional)</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    <tr>
-                                                                        <td>What is 2 + 2?</td>
-                                                                        <td>3</td>
-                                                                        <td>4</td>
-                                                                        <td>5</td>
-                                                                        <td>6</td>
-                                                                        <td>B</td>
-                                                                        <td>Choose the correct answer.</td>
-                                                                        <td>2 + 2 equals 4, which is option B.</td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <td>What is the capital of France?</td>
-                                                                        <td>London</td>
-                                                                        <td>Berlin</td>
-                                                                        <td>Paris</td>
-                                                                        <td>Madrid</td>
-                                                                        <td>C</td>
-                                                                        <td></td>
-                                                                        <td>Paris is the capital of France.</td>
-                                                                    </tr>
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                        <small class="text-muted">
-                                                            <strong>Note:</strong> Correct Answer must be A, B, C, or D (case insensitive).
-                                                            All fields except Instruction and Explanation are required.
-                                                        </small>
-                                                    </div>
                                                 </div>
                                                 
                                                 <div class="text-right mt-3">
@@ -384,6 +348,7 @@
                                                                         <p><strong>Department:</strong> <span id="reviewDepartment"></span></p>
                                                                         <p><strong>Course:</strong> <span id="reviewCourse"></span></p>
                                                                         <p><strong>Topic:</strong> <span id="reviewTopic"></span></p>
+                                                                        <p><strong>Year:</strong> <span id="reviewYear">Not specified</span></p>
                                                                         <p><strong>File:</strong> <span id="reviewFile"></span></p>
                                                                         <p><strong>Total Questions:</strong> <span id="reviewTotalQuestions" class="badge bg-primary"></span></p>
                                                                     </div>
@@ -505,18 +470,45 @@
                     currentStep = step;
                 }
                 
-                // Step 1 to Step 2
+                // Year selection handler
+                $('#uploadYear').change(function() {
+                    var selectedValue = $(this).val();
+                    if (selectedValue === 'custom') {
+                        $('#customYear').show().focus();
+                    } else {
+                        $('#customYear').hide().val('');
+                    }
+                });
+                
+                // Validate custom year on blur
+                $('#customYear').blur(function() {
+                    var year = $(this).val();
+                    if (year && (year < 1900 || year > 2100)) {
+                        $(this).addClass('is-invalid');
+                        $(this).next('.invalid-feedback').remove();
+                        $(this).after('<div class="invalid-feedback">Year must be between 1900 and 2100</div>');
+                    } else {
+                        $(this).removeClass('is-invalid');
+                        $(this).next('.invalid-feedback').remove();
+                    }
+                });
+                
+                // Step 1 validation
                 $('#nextToStep2').click(function() {
                     // Validate step 1
                     var school = $('#uploadSchool').val();
                     var department = $('#uploadDepartment').val();
                     var course = $('#uploadCourse').val();
                     var topic = $('#uploadTopic').val();
+                    var yearSelect = $('#uploadYear').val();
+                    var customYear = $('#customYear').val();
                     
                     var hasError = false;
                     
                     // Clear previous errors
                     $('.form-text.text-danger').text('');
+                    $('.is-invalid').removeClass('is-invalid');
+                    $('.invalid-feedback').remove();
                     
                     if (!school) {
                         $('#schoolError').text('Please select a school');
@@ -538,6 +530,16 @@
                         hasError = true;
                     }
                     
+                    // Validate custom year if selected
+                    if (yearSelect === 'custom' && customYear) {
+                        var year = parseInt(customYear);
+                        if (isNaN(year) || year < 1900 || year > 2100) {
+                            $('#customYear').addClass('is-invalid');
+                            $('#customYear').after('<div class="invalid-feedback">Year must be between 1900 and 2100</div>');
+                            hasError = true;
+                        }
+                    }
+                    
                     if (hasError) {
                         return;
                     }
@@ -555,7 +557,7 @@
                     goToStep(2);
                 });
                 
-                // FIXED: File upload handling
+                // File upload handling
                 $('#uploadArea').click(function(e) {
                     e.preventDefault();
                     $('#questionsFile').trigger('click');
@@ -597,55 +599,43 @@
                 });
                 
                 function handleFileSelect(file) {
-    if (!file) {
-        showAlert('No file selected.', 'error');
-        return;
-    }
-    
-    console.log('File selected:', file.name);
-    
-    // Check file extension - ONLY TXT, DOC, DOCX
-    var fileExtension = file.name.split('.').pop().toLowerCase();
-    var allowedExtensions = ['txt', 'doc', 'docx'];
-    
-    // Check if file extension is allowed
-    if (!allowedExtensions.includes(fileExtension)) {
-        showAlert('Please upload a supported file format: Text (TXT) or Word (DOC, DOCX) files only.', 'error');
-        $('#questionsFile').val('');
-        return;
-    }
-    
-    // Check file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-        showAlert('File size must be less than 5MB.', 'error');
-        $('#questionsFile').val('');
-        return;
-    }
-    
-    // Display file info
-    $('#fileName').text(file.name);
-    $('#fileSize').text(formatFileSize(file.size));
-    $('#fileType').text(getFileTypeName(fileExtension));
-    $('#fileInfo').show();
-    
-    // Enable validate button
-    $('#validateFile').prop('disabled', false);
-}
-
-function getFileTypeName(extension) {
-    var types = {
-        'txt': 'Text Document',
-        'doc': 'Word Document',
-        'docx': 'Word Document'
-    };
-    return types[extension] || extension.toUpperCase();
-}
-
+                    if (!file) {
+                        showAlert('No file selected.', 'error');
+                        return;
+                    }
+                    
+                    console.log('File selected:', file.name);
+                    
+                    // Check file extension - ONLY TXT, DOC, DOCX
+                    var fileExtension = file.name.split('.').pop().toLowerCase();
+                    var allowedExtensions = ['txt', 'doc', 'docx'];
+                    
+                    // Check if file extension is allowed
+                    if (!allowedExtensions.includes(fileExtension)) {
+                        showAlert('Please upload a supported file format: Text (TXT) or Word (DOC, DOCX) files only.', 'error');
+                        $('#questionsFile').val('');
+                        return;
+                    }
+                    
+                    // Check file size (5MB max)
+                    if (file.size > 5 * 1024 * 1024) {
+                        showAlert('File size must be less than 5MB.', 'error');
+                        $('#questionsFile').val('');
+                        return;
+                    }
+                    
+                    // Display file info
+                    $('#fileName').text(file.name);
+                    $('#fileSize').text(formatFileSize(file.size));
+                    $('#fileType').text(getFileTypeName(fileExtension));
+                    $('#fileInfo').show();
+                    
+                    // Enable validate button
+                    $('#validateFile').prop('disabled', false);
+                }
+                
                 function getFileTypeName(extension) {
                     var types = {
-                        'csv': 'CSV Document',
-                        'xls': 'Excel Spreadsheet',
-                        'xlsx': 'Excel Spreadsheet',
                         'txt': 'Text Document',
                         'doc': 'Word Document',
                         'docx': 'Word Document'
@@ -698,7 +688,12 @@ function getFileTypeName(extension) {
                                 });
                                 
                                 $deptSelect.prop('disabled', false);
+                            } else {
+                                showAlert('Failed to load departments', 'error');
                             }
+                        },
+                        error: function() {
+                            showAlert('Error loading departments', 'error');
                         }
                     });
                 });
@@ -731,7 +726,12 @@ function getFileTypeName(extension) {
                                 });
                                 
                                 $courseSelect.prop('disabled', false);
+                            } else {
+                                showAlert('Failed to load courses', 'error');
                             }
+                        },
+                        error: function() {
+                            showAlert('Error loading courses', 'error');
                         }
                     });
                 });
@@ -761,7 +761,12 @@ function getFileTypeName(extension) {
                                 });
                                 
                                 $topicSelect.prop('disabled', false);
+                            } else {
+                                showAlert('Failed to load topics', 'error');
                             }
+                        },
+                        error: function() {
+                            showAlert('Error loading topics', 'error');
                         }
                     });
                 });
@@ -792,20 +797,38 @@ function getFileTypeName(extension) {
                     $('#validationLoading').show();
                     $('#validationSuccess, #validationErrors').hide();
                     
+                    // Get year value
+                    var yearSelect = $('#uploadYear').val();
+                    var customYear = $('#customYear').val();
+                    var yearValue = '';
+                    
+                    if (yearSelect === 'custom' && customYear) {
+                        yearValue = customYear;
+                    } else if (yearSelect && yearSelect !== '' && yearSelect !== 'custom') {
+                        yearValue = yearSelect;
+                    }
+                    
                     // Create FormData object
                     var formData = new FormData();
                     formData.append('course_id', $('#uploadCourse').val());
                     formData.append('topic_id', $('#uploadTopic').val());
                     formData.append('questions_file', fileInput.files[0]);
                     
+                    // Add year to form data if provided
+                    if (yearValue) {
+                        formData.append('year', yearValue);
+                    }
+                    
                     // Set review details
                     $('#reviewSchool').text($('#uploadSchool option:selected').text());
                     $('#reviewDepartment').text($('#uploadDepartment option:selected').text());
                     $('#reviewCourse').text($('#uploadCourse option:selected').text());
                     $('#reviewTopic').text($('#uploadTopic option:selected').text());
-                    $('#reviewFile').text(fileInput.files[0].name);
                     
-                    console.log('Sending file for validation:', fileInput.files[0].name);
+                    // Set year review
+                    var yearDisplay = yearValue ? yearValue : 'Not specified';
+                    $('#reviewYear').text(yearDisplay);
+                    $('#reviewFile').text(fileInput.files[0].name);
                     
                     // Send validation request
                     $.ajax({
@@ -943,103 +966,118 @@ function getFileTypeName(extension) {
                 }
                 
                 // Form submission
-                // Form submission
-$('#batchUploadForm').submit(function(e) {
-    e.preventDefault();
-    
-    var fileInput = $('#questionsFile')[0];
-    
-    if (!fileInput.files || !fileInput.files[0]) {
-        showAlert('No file selected.', 'error');
-        return;
-    }
-    
-    // Disable submit button
-    $('#submitUpload').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Uploading...');
-    
-    // Create FormData object
-    var formData = new FormData();
-    formData.append('course_id', $('#uploadCourse').val());
-    formData.append('topic_id', $('#uploadTopic').val());
-    formData.append('questions_file', fileInput.files[0]);
-    formData.append('confirm_upload', 'true'); // Flag for actual upload
-    
-    // Show progress bar
-    $('#uploadProgress').show();
-    
-    $.ajax({
-        url: '<?php echo base_url("welcome/processbatchupload"); ?>',
-        method: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        dataType: 'json',
-        xhr: function() {
-            var xhr = new XMLHttpRequest();
-            xhr.upload.addEventListener('progress', function(e) {
-                if (e.lengthComputable) {
-                    var percent = Math.round((e.loaded / e.total) * 100);
-                    $('#uploadProgress .progress-bar').css('width', percent + '%');
-                }
-            }, false);
-            return xhr;
-        },
-        success: function(response) {
-            $('#uploadProgress').hide();
-            
-            console.log('Upload response:', response);
-            
-            if (response.status === 'success') {
-                var successCount = response.upload_result ? response.upload_result.success_count : 0;
-                var failedCount = response.upload_result ? response.upload_result.failed_count : 0;
-                
-                var message = 'Successfully uploaded ' + successCount + ' questions.';
-                if (failedCount > 0) {
-                    message += ' ' + failedCount + ' questions failed to upload.';
-                }
-                
-                showAlert(message, 'success');
-                
-                // Reset form and redirect
-                setTimeout(function() {
-                    window.location.href = '<?php echo base_url("questions"); ?>';
-                }, 3000);
-                
-            } else if (response.status === 'validation_error') {
-                // Show validation errors
-                showValidationErrors(response.validation_result);
-                $('#submitUpload').prop('disabled', true).html('<i class="fas fa-upload"></i> Upload Questions');
-                
-            } else {
-                showAlert(response.message, 'error');
-                $('#submitUpload').prop('disabled', false).html('<i class="fas fa-upload"></i> Upload Questions');
-            }
-        },
-        error: function(xhr, status, error) {
-    console.error('Upload error:', status, error);
-    console.error('Response text:', xhr.responseText);
-    
-    $('#uploadProgress').hide();
-    
-    // Try to parse error response
-    var errorMessage = 'Error uploading file. Please try again.';
-    try {
-        var response = JSON.parse(xhr.responseText);
-        if (response.message) {
-            errorMessage = response.message;
-        }
-    } catch (e) {
-        // If not JSON, show raw response
-        if (xhr.responseText) {
-            errorMessage = xhr.responseText.substring(0, 200) + '...';
-        }
-    }
-    
-    showAlert(errorMessage, 'error');
-    $('#submitUpload').prop('disabled', false).html('<i class="fas fa-upload"></i> Upload Questions');
-}
-    });
-});
+                $('#batchUploadForm').submit(function(e) {
+                    e.preventDefault();
+                    
+                    var fileInput = $('#questionsFile')[0];
+                    
+                    if (!fileInput.files || !fileInput.files[0]) {
+                        showAlert('No file selected.', 'error');
+                        return;
+                    }
+                    
+                    // Get year value
+                    var yearSelect = $('#uploadYear').val();
+                    var customYear = $('#customYear').val();
+                    var yearValue = '';
+                    
+                    if (yearSelect === 'custom' && customYear) {
+                        yearValue = customYear;
+                    } else if (yearSelect && yearSelect !== '' && yearSelect !== 'custom') {
+                        yearValue = yearSelect;
+                    }
+                    
+                    // Disable submit button
+                    $('#submitUpload').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Uploading...');
+                    
+                    // Create FormData object
+                    var formData = new FormData();
+                    formData.append('course_id', $('#uploadCourse').val());
+                    formData.append('topic_id', $('#uploadTopic').val());
+                    formData.append('questions_file', fileInput.files[0]);
+                    formData.append('confirm_upload', 'true');
+                    
+                    // Add year to form data if provided
+                    if (yearValue) {
+                        formData.append('year', yearValue);
+                    }
+                    
+                    // Show progress bar
+                    $('#uploadProgress').show();
+                    
+                    $.ajax({
+                        url: '<?php echo base_url("welcome/processbatchupload"); ?>',
+                        method: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        dataType: 'json',
+                        xhr: function() {
+                            var xhr = new XMLHttpRequest();
+                            xhr.upload.addEventListener('progress', function(e) {
+                                if (e.lengthComputable) {
+                                    var percent = Math.round((e.loaded / e.total) * 100);
+                                    $('#uploadProgress .progress-bar').css('width', percent + '%');
+                                }
+                            }, false);
+                            return xhr;
+                        },
+                        success: function(response) {
+                            $('#uploadProgress').hide();
+                            
+                            console.log('Upload response:', response);
+                            
+                            if (response.status === 'success') {
+                                var successCount = response.upload_result ? response.upload_result.success_count : 0;
+                                var failedCount = response.upload_result ? response.upload_result.failed_count : 0;
+                                
+                                var message = 'Successfully uploaded ' + successCount + ' questions.';
+                                if (failedCount > 0) {
+                                    message += ' ' + failedCount + ' questions failed to upload.';
+                                }
+                                
+                                showAlert(message, 'success');
+                                
+                                // Reset form and redirect
+                                setTimeout(function() {
+                                    window.location.href = '<?php echo base_url("questions"); ?>';
+                                }, 3000);
+                                
+                            } else if (response.status === 'validation_error') {
+                                // Show validation errors
+                                showValidationErrors(response.validation_result);
+                                $('#submitUpload').prop('disabled', true).html('<i class="fas fa-upload"></i> Upload Questions');
+                                
+                            } else {
+                                showAlert(response.message, 'error');
+                                $('#submitUpload').prop('disabled', false).html('<i class="fas fa-upload"></i> Upload Questions');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Upload error:', status, error);
+                            console.error('Response text:', xhr.responseText);
+                            
+                            $('#uploadProgress').hide();
+                            
+                            // Try to parse error response
+                            var errorMessage = 'Error uploading file. Please try again.';
+                            try {
+                                var response = JSON.parse(xhr.responseText);
+                                if (response.message) {
+                                    errorMessage = response.message;
+                                }
+                            } catch (e) {
+                                // If not JSON, show raw response
+                                if (xhr.responseText) {
+                                    errorMessage = xhr.responseText.substring(0, 200) + '...';
+                                }
+                            }
+                            
+                            showAlert(errorMessage, 'error');
+                            $('#submitUpload').prop('disabled', false).html('<i class="fas fa-upload"></i> Upload Questions');
+                        }
+                    });
+                });
             });
         </script>
     </body>

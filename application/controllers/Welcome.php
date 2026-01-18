@@ -457,19 +457,6 @@ public function deletecourse_ajax() {
     }
 }
 
-// AJAX: Get Departments by School
-public function getdepartmentsbyschool_ajax($school_id) {
-    if ($this->session->userdata("admin_pass") == "") {
-        echo json_encode(array('status' => 'error', 'message' => 'Session expired!'));
-        return;
-    }
-    
-    $departments = $this->welcomemodel->getdepartmentsbyschool($school_id);
-    echo json_encode(array(
-        'status' => 'success',
-        'departments' => $departments
-    ));
-}
 
 // AJAX: Get semesters
 public function getsemesters_ajax() {
@@ -483,6 +470,27 @@ public function getsemesters_ajax() {
         'status' => 'success',
         'semesters' => $semesters
     ));
+}
+// AJAX: Get Departments by School
+public function getdepartmentsbyschool_ajax($school_id) {
+    if ($this->session->userdata("admin_pass") == "") {
+        echo json_encode(array('status' => 'error', 'message' => 'Session expired!'));
+        return;
+    }
+    
+    $departments = $this->welcomemodel->getdepartmentsbyschool($school_id);
+    
+    if ($departments) {
+        echo json_encode(array(
+            'status' => 'success',
+            'departments' => $departments
+        ));
+    } else {
+        echo json_encode(array(
+            'status' => 'success',
+            'departments' => array() // Return empty array if no departments
+        ));
+    }
 }
 
  // ========== TOPICS CONTROLLER METHODS ==========
@@ -648,7 +656,7 @@ public function getcoursesbyfilters_ajax() {
 
   // ========== QUESTIONS CONTROLLER METHODS ==========
     
-  public function openquestions() {
+public function openquestions() {
     if ($this->session->userdata("admin_pass") == "") {
         redirect("welcome/");
     }
@@ -661,9 +669,11 @@ public function getcoursesbyfilters_ajax() {
     $dept_id = $this->input->get('dept_id');
     $course_id = $this->input->get('course_id');
     $topic_id = $this->input->get('topic_id');
+    $year = $this->input->get('year');
+    $answer = $this->input->get('answer');
     
     // Get questions data for the table with filters
-    $db = $this->welcomemodel->getquestionsview($school_id, $dept_id, $course_id, $topic_id);
+    $db = $this->welcomemodel->getquestionsview($school_id, $dept_id, $course_id, $topic_id, $year, $answer);
     $data["dbhead"] = $db["head"];
     $data["dbbody"] = $db["body"];
     $data["question_count"] = $db["questionCount"];
@@ -674,12 +684,15 @@ public function getcoursesbyfilters_ajax() {
     $data["courses"] = $this->welcomemodel->getcoursesfordropdown($school_id, $dept_id);
     $data["topics"] = $this->welcomemodel->gettopicsbycourse($course_id);
     $data["answer_options"] = $this->welcomemodel->getansweroptions();
+    $data["years"] = $this->welcomemodel->getyearsfordropdown(); // Add years dropdown
     
     // Store filter values for repopulating form
     $data["filter_school_id"] = $school_id;
     $data["filter_dept_id"] = $dept_id;
     $data["filter_course_id"] = $course_id;
     $data["filter_topic_id"] = $topic_id;
+    $data["filter_year"] = $year;
+    $data["filter_answer"] = $answer;
     
     $this->load->view("uploads/questions", $data);
 }
@@ -700,6 +713,7 @@ public function addquestion_ajax() {
     $this->form_validation->set_rules("option_c", "Option C", "required|trim");
     $this->form_validation->set_rules("option_d", "Option D", "required|trim");
     $this->form_validation->set_rules("ans", "Correct Answer", "required|in_list[a,b,c,d]");
+    $this->form_validation->set_rules("year", "Year", "numeric|greater_than_equal_to[1900]|less_than_equal_to[2100]");
     
     if ($this->form_validation->run() == FALSE) {
         echo json_encode(array(
@@ -710,7 +724,7 @@ public function addquestion_ajax() {
         $question_data = array(
             'crse_id' => $this->input->post("course_id"),
             'topic_id' => $this->input->post("topic_id"),
-            'qst' => $this->input->post("qst", false), // false to prevent XSS filtering that breaks HTML
+            'qst' => $this->input->post("qst", false),
             'option_a' => $this->input->post("option_a", false),
             'option_b' => $this->input->post("option_b", false),
             'option_c' => $this->input->post("option_c", false),
@@ -719,6 +733,12 @@ public function addquestion_ajax() {
             'instruction' => $this->input->post("instruction", false),
             'explanation' => $this->input->post("explanation", false)
         );
+        
+        // Add year if provided
+        $year = $this->input->post("year");
+        if (!empty($year)) {
+            $question_data['year'] = $year;
+        }
         
         $result = $this->welcomemodel->addquestion($question_data);
         echo json_encode($result);
@@ -763,6 +783,7 @@ public function updatequestion_ajax() {
     $this->form_validation->set_rules("option_c", "Option C", "required|trim");
     $this->form_validation->set_rules("option_d", "Option D", "required|trim");
     $this->form_validation->set_rules("ans", "Correct Answer", "required|in_list[a,b,c,d]");
+    $this->form_validation->set_rules("year", "Year", "numeric|greater_than_equal_to[1900]|less_than_equal_to[2100]");
     
     if ($this->form_validation->run() == FALSE) {
         echo json_encode(array(
@@ -783,6 +804,15 @@ public function updatequestion_ajax() {
             'instruction' => $this->input->post("instruction", false),
             'explanation' => $this->input->post("explanation", false)
         );
+        
+        // Add year if provided
+        $year = $this->input->post("year");
+        if (!empty($year)) {
+            $question_data['year'] = $year;
+        } else {
+            // Set year to NULL if empty
+            $question_data['year'] = null;
+        }
         
         $result = $this->welcomemodel->updatequestion($question_id, $question_data);
         echo json_encode($result);
@@ -822,6 +852,7 @@ public function gettopicsbycourse_ajax($course_id) {
     ));
 }
 
+
 // AJAX: Preview Question
 public function previewquestion_ajax($id) {
     if ($this->session->userdata("admin_pass") == "") {
@@ -855,9 +886,11 @@ public function previewquestion_ajax($id) {
     // Get dropdown data
     $data["schools"] = $this->welcomemodel->getschoolsfordropdown();
     $data["answer_options"] = $this->welcomemodel->getansweroptions();
+    $data["years"] = $this->welcomemodel->getyearsfordropdown(); // Add years dropdown
     
     $this->load->view("uploads/batch_upload", $data);
 }
+
 public function processbatchupload() {
     // Enable error reporting for debugging
     error_reporting(E_ALL);
@@ -871,20 +904,12 @@ public function processbatchupload() {
     $this->load->library('form_validation');
     $this->form_validation->set_rules("course_id", "Course", "required|numeric");
     $this->form_validation->set_rules("topic_id", "Topic", "required|numeric");
+    $this->form_validation->set_rules("year", "Year", "numeric|greater_than_equal_to[1900]|less_than_equal_to[2100]");
     
     if ($this->form_validation->run() == FALSE) {
         echo json_encode(array(
             'status' => 'validation_error',
             'message' => validation_errors()
-        ));
-        return;
-    }
-    
-    // Check if file was uploaded
-    if (!isset($_FILES['questions_file']) || empty($_FILES['questions_file']['name'])) {
-        echo json_encode(array(
-            'status' => 'error',
-            'message' => 'Please select a file to upload.'
         ));
         return;
     }
@@ -935,14 +960,18 @@ public function processbatchupload() {
         
         error_log('Questions extracted: ' . count($questions_data) . ' records');
         
-        // Add course and topic IDs to each question
+        // Add course, topic IDs, and year to each question
         $course_id = $this->input->post("course_id");
         $topic_id = $this->input->post("topic_id");
+        $year = $this->input->post("year");
         
         $processed_data = array();
         foreach ($questions_data as $question) {
             $question['course_id'] = $course_id;
             $question['topic_id'] = $topic_id;
+            if (!empty($year)) {
+                $question['year'] = $year;
+            }
             $processed_data[] = $question;
         }
         
@@ -1026,16 +1055,23 @@ private function processUploadedFileByType($file_path, $file_extension) {
             throw new Exception("Unsupported file format: $file_extension. Only TXT, DOC, and DOCX files are allowed.");
     }
 }
-
 private function processTextFileNewFormat($file_path) {
     $questions = [];
     $content = file_get_contents($file_path);
     
-    // Clean up the content
+    // Check file encoding
+    error_log("File encoding detection: " . mb_detect_encoding($content));
+    
+    // Clean up the content - normalize line endings
+    $content = str_replace(["\r\n", "\r"], "\n", $content);
     $content = trim($content);
     
+    error_log("Total file length: " . strlen($content) . " characters");
+    error_log("First 200 chars: " . substr($content, 0, 200));
+    
     // Split by lines
-    $lines = preg_split('/\r\n|\r|\n/', $content);
+    $lines = preg_split('/\n/', $content);
+    error_log("Total lines found: " . count($lines));
     
     $line_number = 0;
     foreach ($lines as $line) {
@@ -1044,20 +1080,35 @@ private function processTextFileNewFormat($file_path) {
         
         // Skip empty lines
         if (empty($line)) {
+            error_log("Line $line_number: Empty line skipped");
             continue;
         }
+        
+        error_log("=== Processing Line $line_number ===");
+        error_log("Raw line length: " . strlen($line));
+        error_log("Raw line (first 100 chars): " . substr($line, 0, 100));
         
         // Check if line ends with pipe
         if (substr($line, -1) !== '|') {
-            error_log("Line $line_number: Does not end with pipe character: " . substr($line, 0, 50) . "...");
-            continue;
+            error_log("Line $line_number: WARNING - Does not end with pipe character");
+            error_log("Line ends with: '" . substr($line, -5) . "'");
+            // Don't skip - maybe the pipe is missing but we can still process
         }
         
-        // Remove the ending pipe
+        // Remove the ending pipe if present
         $line = rtrim($line, '|');
+        error_log("After removing pipe: " . substr($line, 0, 100));
         
         // Split by double commas
         $parts = explode(',,', $line);
+        error_log("Parts count: " . count($parts));
+        
+        // Log each part for debugging
+        for ($i = 0; $i < min(count($parts), 10); $i++) {
+            $part = trim($parts[$i]);
+            error_log("Part $i (length " . strlen($part) . "): " . 
+                     (strlen($part) > 50 ? substr($part, 0, 50) . "..." : $part));
+        }
         
         // We need at least 6 parts (Question, A, B, C, D, Answer)
         if (count($parts) >= 6) {
@@ -1072,15 +1123,54 @@ private function processTextFileNewFormat($file_path) {
                 'explanation' => isset($parts[7]) ? trim($parts[7]) : ''
             ];
             
-            // Only add if we have a question
-            if (!empty($question['question'])) {
-                $questions[] = $question;
+            error_log("Question extracted: " . substr($question['question'], 0, 50) . "...");
+            error_log("Correct answer: " . $question['correct_answer']);
+            
+            // Check for year - could be in position 8 or later
+            for ($i = 8; $i < count($parts); $i++) {
+                $candidate = trim($parts[$i]);
+                if (preg_match('/^\d{4}$/', $candidate) && $candidate >= 1900 && $candidate <= 2100) {
+                    $question['year'] = intval($candidate);
+                    error_log("Found year in part $i: " . $question['year']);
+                    break;
+                }
             }
+            
+            // Check if year is in the explanation field
+            if (empty($question['year']) && !empty($question['explanation'])) {
+                if (preg_match('/\b(19\d{2}|20\d{2})\b/', $question['explanation'], $matches)) {
+                    $question['year'] = intval($matches[1]);
+                    error_log("Found year in explanation: " . $question['year']);
+                }
+            }
+            
+            // Validate required fields
+            $is_valid = true;
+            if (empty($question['question'])) {
+                error_log("ERROR: Question text is empty");
+                $is_valid = false;
+            }
+            if (empty($question['correct_answer']) || !in_array($question['correct_answer'], ['A', 'B', 'C', 'D'])) {
+                error_log("ERROR: Invalid correct answer: " . $question['correct_answer']);
+                $is_valid = false;
+            }
+            
+            if ($is_valid) {
+                $questions[] = $question;
+                error_log("SUCCESS: Question added to array");
+            } else {
+                error_log("ERROR: Question validation failed");
+            }
+            
         } else {
-            error_log("Line $line_number: Invalid format - expected at least 6 parts separated by double commas, got " . count($parts));
+            error_log("ERROR: Line $line_number has only " . count($parts) . " parts, need at least 6");
+            error_log("Line content: " . substr($line, 0, 200));
         }
+        
+        error_log("--- End Line $line_number ---\n");
     }
     
+    error_log("Total questions extracted: " . count($questions));
     return $questions;
 }
 
@@ -1240,8 +1330,6 @@ private function processDocFileNewFormat($file_path) {
     
     return $questions;
 }
-
-// Add new template download methods
 public function downloadtexttemplate() {
     if ($this->session->userdata("admin_pass") == "") {
         redirect("welcome/");
@@ -1252,7 +1340,7 @@ public function downloadtexttemplate() {
     header('Content-Type: text/plain');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     
-    // Create template content
+    // Create template content with year field
     $template = "Question Format Template
 ================================
 
@@ -1260,22 +1348,25 @@ INSTRUCTIONS:
 1. Each question must be on a single line
 2. Fields are separated by DOUBLE COMMAS (,,)
 3. Each line must end with a PIPE character (|)
-4. All fields except Instruction and Explanation are required
+4. All fields except Instruction, Explanation, and Year are required
 5. Correct Answer must be A, B, C, or D (case insensitive)
+6. Year must be 4 digits (e.g., 2024) - optional
 
-FORMAT:
+FORMAT (with Year):
+Question,,Option A,,Option B,,Option C,,Option D,,Correct Answer,,Instruction,,Explanation,,Year|
+
+FORMAT (without Year):
 Question,,Option A,,Option B,,Option C,,Option D,,Correct Answer,,Instruction,,Explanation|
 
 EXAMPLES:
-What is 2 + 2?,,3,,4,,5,,6,,B,,Choose the correct answer.,,2 + 2 equals 4, which is option B.|
-What is the capital of France?,,London,,Berlin,,Paris,,Madrid,,C,,,,Paris is the capital of France.|
-Chemical symbol for water?,,H,,HO,,H2O,,OH,,C,,,,H2O is the chemical formula for water.|
-Who wrote 'Romeo and Juliet'?,,Charles Dickens,,William Shakespeare,,Mark Twain,,Jane Austen,,B,,,,William Shakespeare wrote Romeo and Juliet.|
+What is 2 + 2?,,3,,4,,5,,6,,B,,Choose the correct answer.,,2 + 2 equals 4, which is option B.,,2023|
+What is the capital of France?,,London,,Berlin,,Paris,,Madrid,,C,,,,Paris is the capital of France.,,2024|
+Chemical symbol for water?,,H,,HO,,H2O,,OH,,C,,,,H2O is the chemical formula for water.|  # No year
+Who wrote 'Romeo and Juliet'?,,Charles Dickens,,William Shakespeare,,Mark Twain,,Jane Austen,,B,,,,William Shakespeare wrote Romeo and Juliet.,,2022|
 
 YOUR QUESTIONS (Replace these with your own):
-[Your Question 1],,[Option A],,[Option B],,[Option C],,[Option D],,[Correct Answer],,[Instruction],,[Explanation]|
-[Your Question 2],,[Option A],,[Option B],,[Option C],,[Option D],,[Correct Answer],,[Instruction],,[Explanation]|
-[Your Question 3],,[Option A],,[Option B],,[Option C],,[Option D],,[Correct Answer],,[Instruction],,[Explanation]|
+[Your Question 1],,[Option A],,[Option B],,[Option C],,[Option D],,[Correct Answer],,[Instruction],,[Explanation],,[Year]|
+[Your Question 2],,[Option A],,[Option B],,[Option C],,[Option D],,[Correct Answer],,[Instruction],,[Explanation]|  # Without year
 ";
     
     echo $template;

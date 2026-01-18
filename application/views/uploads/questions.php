@@ -7,12 +7,19 @@
         <!-- MathJax for MathML support -->
         <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
         <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <style>
+            .year-badge {
+                font-size: 0.8em;
+                padding: 2px 8px;
+                border-radius: 10px;
+            }
+        </style>
     </head>
     <body class="hold-transition sidebar-mini">
         <!-- Pre loader -->
         <div id="preloader-overlay">
             <div class="preloader-spinner"></div>
-        </div>
+        </div> 
         
         <div class="wrapper">
             <?php $this->load->view("load/header") ?>
@@ -57,7 +64,7 @@
                             <div class="card-body">
                                 <form id="filterForm" method="GET" action="<?php echo base_url('welcome/openquestions'); ?>">
                                     <div class="row">
-                                        <div class="col-md-3">
+                                        <div class="col-md-2">
                                             <div class="form-group">
                                                 <label for="filterSchool">School</label>
                                                 <select class="form-control" id="filterSchool" name="school_id">
@@ -72,7 +79,7 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-2">
                                             <div class="form-group">
                                                 <label for="filterDepartment">Department</label>
                                                 <select class="form-control" id="filterDepartment" name="dept_id">
@@ -87,7 +94,7 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-2">
                                             <div class="form-group">
                                                 <label for="filterCourse">Course</label>
                                                 <select class="form-control" id="filterCourse" name="course_id">
@@ -102,7 +109,7 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-2">
                                             <div class="form-group">
                                                 <label for="filterTopic">Topic</label>
                                                 <select class="form-control" id="filterTopic" name="topic_id">
@@ -114,6 +121,34 @@
                                                             </option>
                                                         <?php endforeach; ?>
                                                     <?php endif; ?>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group">
+                                                <label for="filterYear">Year</label>
+                                                <select class="form-control" id="filterYear" name="year">
+                                                    <option value="">All Years</option>
+                                                    <option value="null">No Year Assigned</option>
+                                                    <?php if(isset($years) && !empty($years)): ?>
+                                                        <?php foreach($years as $year): ?>
+                                                            <option value="<?php echo $year; ?>" <?php echo isset($filter_year) && $filter_year == $year ? 'selected' : ''; ?>>
+                                                                <?php echo htmlspecialchars($year); ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group">
+                                                <label for="filterAnswer">Answer</label>
+                                                <select class="form-control" id="filterAnswer" name="answer">
+                                                    <option value="">All Answers</option>
+                                                    <option value="A" <?php echo isset($filter_answer) && $filter_answer == 'A' ? 'selected' : ''; ?>>A</option>
+                                                    <option value="B" <?php echo isset($filter_answer) && $filter_answer == 'B' ? 'selected' : ''; ?>>B</option>
+                                                    <option value="C" <?php echo isset($filter_answer) && $filter_answer == 'C' ? 'selected' : ''; ?>>C</option>
+                                                    <option value="D" <?php echo isset($filter_answer) && $filter_answer == 'D' ? 'selected' : ''; ?>>D</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -138,6 +173,9 @@
                                 <button type="button" class="btn btn-success" data-toggle="modal" data-target="#addQuestionModal">
                                     <i class="fas fa-plus-circle"></i> Add New Question
                                 </button>
+                                <a href="<?php echo base_url('welcome/batchupload'); ?>" class="btn btn-warning">
+                                    <i class="fas fa-upload"></i> Batch Upload
+                                </a>
                                 <button type="button" class="btn btn-secondary" id="refreshTable">
                                     <i class="fas fa-sync-alt"></i> Refresh Table
                                 </button>
@@ -178,7 +216,7 @@
                                         <?php else: ?>
                                             <div class="alert alert-info text-center">
                                                 <h5><i class="icon fas fa-info"></i> No Questions Found!</h5>
-                                                <?php if(isset($filter_school_id) || isset($filter_dept_id) || isset($filter_course_id) || isset($filter_topic_id)): ?>
+                                                <?php if(isset($filter_school_id) || isset($filter_dept_id) || isset($filter_course_id) || isset($filter_topic_id) || isset($filter_year) || isset($filter_answer)): ?>
                                                     No questions match your filter criteria. Try changing your filters or 
                                                     <a href="<?php echo base_url('welcome/openquestions'); ?>">clear filters</a>.
                                                 <?php else: ?>
@@ -214,7 +252,7 @@
                     <form id="addQuestionForm">
                         <div class="modal-body">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="addModalSchool">School</label>
                                         <select class="form-control" id="addModalSchool" name="modal_school_id">
@@ -227,12 +265,30 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="addModalDepartment">Department</label>
                                         <select class="form-control" id="addModalDepartment" name="modal_dept_id">
                                             <option value="">-- Select Department --</option>
                                         </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="addModalYear">Year (Optional)</label>
+                                        <select class="form-control" id="addModalYear" name="year">
+                                            <option value="">-- Select Year (Optional) --</option>
+                                            <option value="custom">Enter Custom Year</option>
+                                            <?php if(isset($years) && !empty($years)): ?>
+                                                <?php foreach($years as $year): ?>
+                                                    <option value="<?php echo $year; ?>"><?php echo htmlspecialchars($year); ?></option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </select>
+                                        <input type="number" class="form-control mt-2" id="addCustomYear" name="custom_year" 
+                                               placeholder="Enter year (e.g., 2024)" style="display: none;" 
+                                               min="1900" max="2100">
+                                        <small class="form-text text-muted">Select or enter the year for this question (optional)</small>
                                     </div>
                                 </div>
                             </div>
@@ -305,23 +361,28 @@
                                 </div>
                             </div>
                             
-                            <div class="form-group">
-                                <label for="addCorrectAnswer">Correct Answer *</label>
-                                <select class="form-control" id="addCorrectAnswer" name="ans" required>
-                                    <option value="">-- Select Correct Answer --</option>
-                                    <?php if(isset($answer_options) && !empty($answer_options)): ?>
-                                        <?php foreach($answer_options as $value => $label): ?>
-                                            <option value="<?php echo $value; ?>"><?php echo htmlspecialchars($label); ?></option>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </select>
-                                <small class="form-text text-danger" id="addAnswerError"></small>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="addExplanation">Explanation (Optional)</label>
-                                <textarea class="form-control summernote" id="addExplanation" name="explanation" rows="3"></textarea>
-                                <small class="form-text text-muted">Use this to explain why the answer is correct</small>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="addCorrectAnswer">Correct Answer *</label>
+                                        <select class="form-control" id="addCorrectAnswer" name="ans" required>
+                                            <option value="">-- Select Correct Answer --</option>
+                                            <?php if(isset($answer_options) && !empty($answer_options)): ?>
+                                                <?php foreach($answer_options as $value => $label): ?>
+                                                    <option value="<?php echo $value; ?>"><?php echo htmlspecialchars($label); ?></option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </select>
+                                        <small class="form-text text-danger" id="addAnswerError"></small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="addExplanation">Explanation (Optional)</label>
+                                        <textarea class="form-control summernote" id="addExplanation" name="explanation" rows="2"></textarea>
+                                        <small class="form-text text-muted">Use this to explain why the answer is correct</small>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -351,7 +412,7 @@
                         <div class="modal-body">
                             <input type="hidden" id="editQuestionId" name="question_id">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="editModalSchool">School</label>
                                         <select class="form-control" id="editModalSchool" name="modal_school_id">
@@ -364,12 +425,30 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="editModalDepartment">Department</label>
                                         <select class="form-control" id="editModalDepartment" name="modal_dept_id">
                                             <option value="">-- Select Department --</option>
                                         </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="editModalYear">Year (Optional)</label>
+                                        <select class="form-control" id="editModalYear" name="year">
+                                            <option value="">-- Select Year (Optional) --</option>
+                                            <option value="custom">Enter Custom Year</option>
+                                            <?php if(isset($years) && !empty($years)): ?>
+                                                <?php foreach($years as $year): ?>
+                                                    <option value="<?php echo $year; ?>"><?php echo htmlspecialchars($year); ?></option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </select>
+                                        <input type="number" class="form-control mt-2" id="editCustomYear" name="custom_year" 
+                                               placeholder="Enter year (e.g., 2024)" style="display: none;" 
+                                               min="1900" max="2100">
+                                        <small class="form-text text-muted">Select or enter the year for this question (optional)</small>
                                     </div>
                                 </div>
                             </div>
@@ -440,22 +519,27 @@
                                 </div>
                             </div>
                             
-                            <div class="form-group">
-                                <label for="editCorrectAnswer">Correct Answer *</label>
-                                <select class="form-control" id="editCorrectAnswer" name="ans" required>
-                                    <option value="">-- Select Correct Answer --</option>
-                                    <?php if(isset($answer_options) && !empty($answer_options)): ?>
-                                        <?php foreach($answer_options as $value => $label): ?>
-                                            <option value="<?php echo $value; ?>"><?php echo htmlspecialchars($label); ?></option>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </select>
-                                <small class="form-text text-danger" id="editAnswerError"></small>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="editExplanation">Explanation (Optional)</label>
-                                <textarea class="form-control summernote" id="editExplanation" name="explanation" rows="3"></textarea>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="editCorrectAnswer">Correct Answer *</label>
+                                        <select class="form-control" id="editCorrectAnswer" name="ans" required>
+                                            <option value="">-- Select Correct Answer --</option>
+                                            <?php if(isset($answer_options) && !empty($answer_options)): ?>
+                                                <?php foreach($answer_options as $value => $label): ?>
+                                                    <option value="<?php echo $value; ?>"><?php echo htmlspecialchars($label); ?></option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </select>
+                                        <small class="form-text text-danger" id="editAnswerError"></small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="editExplanation">Explanation (Optional)</label>
+                                        <textarea class="form-control summernote" id="editExplanation" name="explanation" rows="2"></textarea>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -534,12 +618,14 @@
                     "order": [[0, 'asc']],
                     "columnDefs": [
                         { "width": "5%", "targets": 0 },
-                        { "width": "35%", "targets": 1 },
+                        { "width": "30%", "targets": 1 },
                         { "width": "15%", "targets": 2 },
                         { "width": "10%", "targets": 3 },
                         { "width": "10%", "targets": 4 },
                         { "width": "10%", "targets": 5 },
-                        { "width": "10%", "targets": 6 }
+                        { "width": "5%", "targets": 6 },
+                        { "width": "5%", "targets": 7 },
+                        { "width": "5%", "targets": 8 }
                     ]
                 });
                 
@@ -574,6 +660,22 @@
                 // Initialize main editors
                 initSummernote('.summernote', 200);
                 initSummernote('.summernote-option', 120);
+                
+                // Year selection handlers
+                function handleYearSelection(yearSelectId, customYearId) {
+                    $(document).on('change', yearSelectId, function() {
+                        var selectedValue = $(this).val();
+                        if (selectedValue === 'custom') {
+                            $(customYearId).show().focus();
+                        } else {
+                            $(customYearId).hide().val('');
+                        }
+                    });
+                }
+                
+                // Initialize year selection handlers
+                handleYearSelection('#addModalYear', '#addCustomYear');
+                handleYearSelection('#editModalYear', '#editCustomYear');
                 
                 // Hide preloader
                 window.addEventListener('load', function() {
@@ -789,6 +891,24 @@
                     }
                 });
                 
+                // Function to get year value from form
+                function getYearValue(yearSelectId, customYearId) {
+                    var yearSelect = $(yearSelectId).val();
+                    var customYear = $(customYearId).val();
+                    
+                    if (yearSelect === 'custom' && customYear) {
+                        // Validate custom year
+                        var year = parseInt(customYear);
+                        if (isNaN(year) || year < 1900 || year > 2100) {
+                            return {value: '', error: 'Year must be between 1900 and 2100'};
+                        }
+                        return {value: year, error: ''};
+                    } else if (yearSelect && yearSelect !== 'custom' && yearSelect !== '') {
+                        return {value: yearSelect, error: ''};
+                    }
+                    return {value: '', error: ''};
+                }
+                
                 // Add Question Form Submission
                 $('#addQuestionForm').submit(function(e) {
                     e.preventDefault();
@@ -800,6 +920,14 @@
                     var courseId = $('#addModalCourse').val();
                     var topicId = $('#addModalTopic').val();
                     var answer = $('#addCorrectAnswer').val();
+                    
+                    // Get year value
+                    var yearResult = getYearValue('#addModalYear', '#addCustomYear');
+                    if (yearResult.error) {
+                        $('#addCustomYear').addClass('is-invalid');
+                        showAlert(yearResult.error, 'error');
+                        return;
+                    }
                     
                     // Get Summernote content
                     var questionContent = $('#addQuestion').summernote('code');
@@ -864,6 +992,11 @@
                     formData.append('instruction', instructionContent);
                     formData.append('explanation', explanationContent);
                     
+                    // Add year if provided
+                    if (yearResult.value) {
+                        formData.append('year', yearResult.value);
+                    }
+                    
                     $.ajax({
                         url: '<?php echo base_url("welcome/addquestion_ajax"); ?>',
                         method: 'POST',
@@ -884,6 +1017,7 @@
                                 $('.summernote-option').summernote('reset');
                                 // Reset dropdowns
                                 $('#addModalDepartment, #addModalCourse, #addModalTopic').empty().append('<option value="">-- Select --</option>');
+                                $('#addCustomYear').hide();
                                 refreshTable();
                             } else if (response.status === 'validation_error') {
                                 var errors = response.message;
@@ -911,6 +1045,9 @@
                                 if (errors.includes('Correct Answer')) {
                                     $('#addAnswerError').text('Please select the correct answer');
                                 }
+                                if (errors.includes('Year')) {
+                                    showAlert('Invalid year. Must be between 1900 and 2100', 'error');
+                                }
                             } else {
                                 showAlert(response.message, 'error');
                             }
@@ -924,63 +1061,70 @@
                     });
                 });
                 
-                // Edit Question Button Click
-                $(document).on('click', '.edit-question', function() {
-                    var questionId = $(this).data('id');
-                    
-                    // Load question details
-                    $.ajax({
-                        url: '<?php echo base_url("welcome/getquestion_ajax"); ?>/' + questionId,
-                        method: 'GET',
-                        dataType: 'json',
-                        beforeSend: function() {
-                            $('#editQuestionModal').modal('show');
-                            $('.modal-body').addClass('loading');
-                        },
-                        success: function(response) {
-                            if (response.status === 'success') {
-                                var question = response.question;
-                                
-                                // Set basic values
-                                $('#editQuestionId').val(question.id);
-                                $('#editQuestion').summernote('code', question.qst);
-                                $('#editOptionA').summernote('code', question.option_a);
-                                $('#editOptionB').summernote('code', question.option_b);
-                                $('#editOptionC').summernote('code', question.option_c);
-                                $('#editOptionD').summernote('code', question.option_d);
-                                $('#editCorrectAnswer').val(question.ans);
-                                $('#editInstruction').summernote('code', question.instruction || '');
-                                $('#editExplanation').summernote('code', question.explanation || '');
-                                
-                                // Set school, department, course, and topic
-                                if (question.sch_id) {
-                                    $('#editModalSchool').val(question.sch_id);
-                                    loadDepartmentsBySchool(question.sch_id, $('#editModalDepartment'), question.dept_id);
-                                    
-                                    // After departments load, load courses and topics
-                                    setTimeout(function() {
-                                        if (question.dept_id) {
-                                            loadCoursesByFilters(question.sch_id, question.dept_id, $('#editModalCourse'), question.crse_id);
-                                            
-                                            setTimeout(function() {
-                                                if (question.crse_id) {
-                                                    loadTopicsByCourse(question.crse_id, $('#editModalTopic'), question.topic_id);
-                                                }
-                                            }, 500);
-                                        }
-                                    }, 500);
-                                }
-                            }
-                        },
-                        error: function() {
-                            showAlert('Error loading question details!', 'error');
-                        },
-                        complete: function() {
-                            $('.modal-body').removeClass('loading');
-                        }
-                    });
-                });
+// Edit Question Button Click
+$(document).on('click', '.edit-question', function() {
+    var questionId = $(this).data('id');
+    
+    // Load question details
+    $.ajax({
+        url: '<?php echo base_url("welcome/getquestion_ajax"); ?>/' + questionId,
+        method: 'GET',
+        dataType: 'json',
+        beforeSend: function() {
+            $('#editQuestionModal').modal('show');
+            $('.modal-body').addClass('loading');
+        },
+        success: function(response) {
+            if (response.status === 'success') {
+                var question = response.question;
+                console.log(question);
                 
+                // Set basic values
+                $('#editQuestionId').val(question.id);
+                $('#editQuestion').summernote('code', question.qst);
+                $('#editOptionA').summernote('code', question.option_a);
+                $('#editOptionB').summernote('code', question.option_b);
+                $('#editOptionC').summernote('code', question.option_c);
+                $('#editOptionD').summernote('code', question.option_d);
+                $('#editCorrectAnswer').val(question.ans);
+                $('#editInstruction').summernote('code', question.instruction || '');
+                $('#editExplanation').summernote('code', question.explanation || '');
+                
+                // Set year - IMPORTANT FIX
+                if (question.year) {
+                    $('#editModalYear').val(question.year.toString());
+                } else {
+                    $('#editModalYear').val('');
+                }
+                
+                // Set school, department, course, and topic
+                if (question.sch_id) {
+                    $('#editModalSchool').val(question.sch_id);
+                    loadDepartmentsBySchool(question.sch_id, $('#editModalDepartment'), question.dept_id);
+                    
+                    // After departments load, load courses and topics
+                    setTimeout(function() {
+                        if (question.dept_id) {
+                            loadCoursesByFilters(question.sch_id, question.dept_id, $('#editModalCourse'), question.crse_id);
+                            
+                            setTimeout(function() {
+                                if (question.crse_id) {
+                                    loadTopicsByCourse(question.crse_id, $('#editModalTopic'), question.topic_id);
+                                }
+                            }, 500);
+                        }
+                    }, 500);
+                }
+            }
+        },
+        error: function() {
+            showAlert('Error loading question details!', 'error');
+        },
+        complete: function() {
+            $('.modal-body').removeClass('loading');
+        }
+    });
+});
                 // Preview Question Button Click
                 $(document).on('click', '.preview-question', function() {
                     var questionId = $(this).data('id');
@@ -998,12 +1142,18 @@
                             if (response.status === 'success') {
                                 var question = response.question;
                                 
+                                // Year badge
+                                var yearBadge = '';
+                                if (question.year) {
+                                    yearBadge = `<span class="badge bg-info year-badge">${question.year}</span>`;
+                                }
+                                
                                 // Create preview HTML
                                 var previewHtml = `
                                     <div class="question-preview">
                                         <div class="card">
                                             <div class="card-header bg-light">
-                                                <h6 class="mb-0">Question Preview</h6>
+                                                <h6 class="mb-0">Question Preview ${yearBadge}</h6>
                                                 <small class="text-muted">Course: ${question.course_code} - ${question.course_title}</small><br>
                                                 <small class="text-muted">Topic: ${question.topic_name || 'N/A'}</small>
                                             </div>
@@ -1076,6 +1226,14 @@
                     var topicId = $('#editModalTopic').val();
                     var answer = $('#editCorrectAnswer').val();
                     
+                    // Get year value
+                    var yearResult = getYearValue('#editModalYear', '#editCustomYear');
+                    if (yearResult.error) {
+                        $('#editCustomYear').addClass('is-invalid');
+                        showAlert(yearResult.error, 'error');
+                        return;
+                    }
+                    
                     // Get Summernote content
                     var questionContent = $('#editQuestion').summernote('code');
                     var optionAContent = $('#editOptionA').summernote('code');
@@ -1140,6 +1298,13 @@
                     formData.append('instruction', instructionContent);
                     formData.append('explanation', explanationContent);
                     
+                    // Add year if provided
+                    if (yearResult.value) {
+                        formData.append('year', yearResult.value);
+                    } else {
+                        formData.append('year', '');
+                    }
+                    
                     $.ajax({
                         url: '<?php echo base_url("welcome/updatequestion_ajax"); ?>',
                         method: 'POST',
@@ -1180,6 +1345,9 @@
                                 }
                                 if (errors.includes('Correct Answer')) {
                                     $('#editAnswerError').text('Please select the correct answer');
+                                }
+                                if (errors.includes('Year')) {
+                                    showAlert('Invalid year. Must be between 1900 and 2100', 'error');
                                 }
                             } else {
                                 showAlert(response.message, 'error');
@@ -1240,10 +1408,12 @@
                     $('.summernote').summernote('reset');
                     $('.summernote-option').summernote('reset');
                     $('#addModalDepartment, #addModalCourse, #addModalTopic').empty().append('<option value="">-- Select --</option>');
+                    $('#addCustomYear').hide();
                     $('.form-text.text-danger').text('');
                 });
                 
                 $('#editQuestionModal').on('hidden.bs.modal', function() {
+                    $('#editCustomYear').hide();
                     $('.form-text.text-danger').text('');
                 });
                 
